@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const contactForm = document.getElementById('contactForm');
     
     if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
+        contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Get form values
@@ -100,20 +100,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (isValid) {
-                // Show success message
-                alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+                // Disable submit button to prevent double submission
+                const submitBtn = contactForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Enviando...';
                 
-                // Reset form
-                contactForm.reset();
-                
-                // In a real application, you would send the data to a server here
-                console.log('Form Data:', {
-                    name,
-                    email,
-                    phone,
-                    service,
-                    message
-                });
+                try {
+                    // Send data to SheetMonkey API
+                    const formData = new FormData();
+                    formData.append('Nome', name);
+                    formData.append('Email', email);
+                    formData.append('Telefone', phone);
+                    formData.append('Serviço', service);
+                    formData.append('Mensagem', message);
+                    formData.append('Data', new Date().toLocaleString('pt-BR'));
+                    
+                    const response = await fetch('https://api.sheetmonkey.io/form/i1FQa7J7jput5dD3q2U3dn', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        // Show success message
+                        alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+                        
+                        // Reset form
+                        contactForm.reset();
+                    } else {
+                        throw new Error('Erro ao enviar formulário');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente ou entre em contato por telefone.');
+                } finally {
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
             } else {
                 alert('Por favor, corrija os seguintes erros:\n\n' + errorMessage);
             }
